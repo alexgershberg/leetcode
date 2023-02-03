@@ -1,9 +1,13 @@
+//
+// Created by alexgershberg on 03/02/23.
+//
+
+//https://leetcode.com/problems/merge-k-sorted-lists/
+
 #include <iostream>
 #include <vector>
 #include <algorithm>
 #include <cmath>
-
-//https://leetcode.com/problems/merge-k-sorted-lists/
 
 struct ListNode
 {
