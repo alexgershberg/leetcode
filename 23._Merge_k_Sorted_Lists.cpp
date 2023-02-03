@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
+#include <cmath>
 
 //https://leetcode.com/problems/merge-k-sorted-lists/
 
@@ -40,79 +42,71 @@ struct LinkedList
     }
 };
 
-
-class Solution {
+class Solution
+{
 public:
-    ListNode* mergeKLists(std::vector<ListNode*>& lists)
-    {
-        if (lists.size() == 0)
-        {
-            return nullptr;
-        }
-
-        if (lists.size() == 1)
-        {
-            return lists.at(0);
-        }
-
-        if (lists.size() == 2)
-        {
-            auto list1 = lists.at(0);
-            auto list2 = lists.at(1);
-            return mergeTwo(list1, list2);
-        }
-
-        auto list1 = lists.back();
-        lists.pop_back();
-
-        auto list2 = lists.back();
-        lists.pop_back();
-
-        auto result = mergeTwo(list1, list2);
-
-        auto remaining = mergeKLists(lists);
-
-        auto final = mergeTwo(result, remaining);
-
-        return final;
-
-
-    }
-
-    ListNode* mergeTwo(ListNode* list1, ListNode* list2)
+    static ListNode* mergeTwo(ListNode* first, ListNode* second)
     {
         LinkedList output;
 
-        while (list1 != nullptr && list2 != nullptr)
+        while (first != nullptr && second != nullptr)
         {
-            auto val1 = list1->val;
-            auto val2 = list2->val;
+            auto val1 = first->val;
+            auto val2 = second->val;
 
             if (val1 <= val2)
             {
                 output.append(new ListNode(val1));
-                list1 = list1->next;
+                first = first->next;
             }
             else
             {
                 output.append(new ListNode(val2));
-                list2 = list2->next;
+                second = second->next;
             }
         }
 
-        while (list1 != nullptr)
+        while (first != nullptr)
         {
-            output.append(new ListNode(list1->val));
-            list1 = list1->next;
+            output.append(new ListNode(first->val));
+            first = first->next;
         }
 
-        while (list2 != nullptr)
+        while (second != nullptr)
         {
-            output.append(new ListNode(list2->val));
-            list2 = list2->next;
+            output.append(new ListNode(second->val));
+            second = second->next;
         }
 
         return output.head;
+
+    }
+
+    ListNode* mergeKLists(std::vector<ListNode*>& lists)
+    {
+        if (lists.empty())
+            return nullptr;
+
+        if (lists.size() == 1)
+            return lists.at(0);
+
+        if (lists.size() == 2)
+        {
+            auto first = lists.at(0);
+            auto second = lists.at(1);
+            return mergeTwo(first, second);
+        }
+
+        auto size = static_cast<long double>(lists.size());
+        auto midpoint  = static_cast<long>(floorl(size / 2L));
+
+        auto left = std::vector<ListNode*>(lists.begin(), lists.begin() + midpoint);
+        auto left_result = mergeKLists(left);
+
+        auto right = std::vector<ListNode*>(lists.begin() + midpoint, lists.end());
+        auto right_result = mergeKLists(right);
+
+        return mergeTwo(left_result, right_result);
     }
 };
 
@@ -140,7 +134,6 @@ int main()
     list1.append(4);
     list1.append(5);
 
-
     LinkedList list2;
     list2.append(1);
     list2.append(3);
@@ -156,6 +149,7 @@ int main()
     lists.push_back(list3.head);
 
     Solution sol;
+
     auto res = sol.mergeKLists(lists);
     printRes(res);
 }
