@@ -83,7 +83,6 @@ public:
         }
 
         return output.head;
-
     }
 
     ListNode* mergeKLists(std::vector<ListNode*>& lists)
