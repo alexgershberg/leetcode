@@ -12,6 +12,23 @@
 #include <set>
 #include <fstream>
 
+void printGraph(const std::map<int, std::vector<int>>& graph)
+{
+    std::for_each(graph.begin(), graph.end(), [](const auto& pair)
+    {
+      auto& key = pair.first;
+      auto& values = pair.second;
+
+      std::cout << key << ": ";
+      std::for_each(values.begin(), values.end(), [](const int val)
+      {
+        std::cout << val << " ";
+      });
+
+      std::cout << std::endl;
+    });
+}
+
 std::map<int, std::vector<int>> makeGraph(const std::vector<std::vector<int>>& edges)
 {
     std::map<int, std::vector<int>> graph;
@@ -33,24 +50,8 @@ std::map<int, std::vector<int>> makeGraph(const std::vector<std::vector<int>>& e
     return graph;
 }
 
-void printGraph(const std::map<int, std::vector<int>>& graph)
-{
-    std::for_each(graph.begin(), graph.end(), [](const auto& pair)
-    {
-      auto& key = pair.first;
-      auto& values = pair.second;
-
-      std::cout << key << ": ";
-      std::for_each(values.begin(), values.end(), [](const int val)
-      {
-        std::cout << val << " ";
-      });
-
-      std::cout << std::endl;
-    });
-};
-
-void addSingleEdge(const std::map<int, std::vector<int>>& graph, std::vector<std::vector<int>>& output)
+void addSingleEdge(const std::map<int, std::vector<int>>& graph,
+    std::vector<std::vector<int>>& output, std::set<std::pair<int, int>>& cache)
 {
     std::for_each(graph.begin(), graph.end(), [&](const std::pair<int, std::vector<int>>& key_val)
     {
@@ -59,8 +60,21 @@ void addSingleEdge(const std::map<int, std::vector<int>>& graph, std::vector<std
 
       if (val.size() == 1)
       {
-          std::vector<int> temp{ key, val.at(0) };
+          int int_val = val.at(0);
+
+          std::vector<int> temp{ key, int_val };
           output.push_back(std::move(temp));
+
+          if (key < int_val)
+          {
+              auto pair = std::make_pair(key, val.at(0));
+              cache.insert(pair);
+          }
+          else
+          {
+              auto pair = std::make_pair(int_val, key);
+              cache.insert(pair);
+          }
       }
     });
 }
@@ -102,11 +116,50 @@ bool ping(int servers, const std::map<int, std::vector<int>>& graph)
     return (islands == 1) && visited.size() == servers;
 }
 
+bool isInCache(const std::vector<int>& connection, std::set<std::pair<int, int>>& cache)
+{
+    auto first = connection.at(0);
+    auto second = connection.at(1);
+
+    if (first < second)
+    {
+        auto pair = std::make_pair(first, second);
+        return cache.find(pair) != cache.end();
+    }
+    else
+    {
+        auto pair = std::make_pair(second, first);
+        return cache.find(pair) != cache.end();
+    }
+}
+
+std::map<int, std::vector<int>> modifyMasterGraph(const std::vector<int>& connection, const std::map<int, std::vector<int>>& master_graph)
+{
+    const auto& first = connection.at(0);
+    const auto& second = connection.at(1);
+
+    std::map<int, std::vector<int>> graph(master_graph);
+
+    auto& first_vec = graph[first];
+    first_vec.erase(std::remove(first_vec.begin(), first_vec.end(), second), first_vec.end());
+
+    auto& second_vec = graph[second];
+    second_vec.erase(std::remove(second_vec.begin(), second_vec.end(), first), second_vec.end());
+
+    return graph;
+}
+
 std::vector<std::vector<int>> solve(int servers, std::vector<std::vector<int>>& connections)
 {
-    std::vector<std::vector<int>> final_result;
+    if (connections.size() == 1)
+        return connections;
 
-    //addSingleEdge(graph, final_result);
+    std::vector<std::vector<int>> final_result;
+    std::set<std::pair<int, int>> cache;
+
+    auto master_graph = makeGraph(connections);
+
+    addSingleEdge(master_graph, final_result, cache);
 
     std::vector<std::vector<int>> connections_copy;
     std::copy(connections.begin(), connections.end(), std::back_inserter(connections_copy));
@@ -114,8 +167,16 @@ std::vector<std::vector<int>> solve(int servers, std::vector<std::vector<int>>& 
     for (int i = 0; i < connections.size(); i++)
     {
         std::vector<int> temp = connections_copy.at(i);
+
+        //Single Connection Edge case, don't need to do anything, it's already processed.
+        if(isInCache(temp, cache))
+            continue;
+
         connections_copy.erase(connections_copy.begin() + i);
-        auto graph = makeGraph(connections_copy);
+
+        //We don't need to make a graph from scratch. Copy modified master instead.
+        auto graph = modifyMasterGraph(temp, master_graph);
+
         if (!ping(servers, graph))
         {
             final_result.push_back(temp);
@@ -150,8 +211,7 @@ void generateBigTestCase(int n)
 
 int main()
 {
-    generateBigTestCase(100000);
-
+//    generateBigTestCase(100000);
 
     std::vector<std::vector<int>> connections{
         { 1, 2 }, { 1, 3 }, { 2, 4 }, { 3, 4 },
