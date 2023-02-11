@@ -2,6 +2,8 @@
 // Created by alexgershberg on 11/02/23.
 //
 
+//https://leetcode.com/problems/sum-of-square-numbers/
+
 #include <cmath>
 
 class Solution {
